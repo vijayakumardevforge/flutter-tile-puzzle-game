@@ -1,4 +1,5 @@
 # Tile Vision: Flutter Puzzle Game
+Developed by **Jey Kumar**
 
 A beautiful, progressive image puzzle game built with Flutter.
 
