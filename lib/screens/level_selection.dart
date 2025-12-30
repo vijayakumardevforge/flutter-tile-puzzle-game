@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import '../game/ui.dart';
 import '../game/storage.dart';
+import '../game/assets.dart';
 
 class LevelSelectionScreen extends StatefulWidget {
   const LevelSelectionScreen({super.key});
@@ -42,14 +44,18 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
           itemCount: 30, // Total 30 levels (10 Easy, 10 Medium, 10 Hard)
           itemBuilder: (context, index) {
             final int level = index + 1;
-            final bool isLocked = level > maxLevel;
+            final bool isUnlocked = level <= maxLevel;
+            final bool isHidden = !isUnlocked; // Hide everything that is locked
+
+            final String imagePath = PuzzleAssets.getImageForLevel(level);
+
             final Map<String, int>? bestScore = GameStorage().getBestScore(
               level,
             );
 
             return GestureDetector(
               onTap: () async {
-                if (!isLocked) {
+                if (isUnlocked) {
                   // Wait for the game screen to close
                   await Navigator.push(
                     context,
@@ -63,58 +69,84 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color: isLocked ? Colors.white10 : Colors.blueAccent,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: isLocked
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: Colors.blue.withOpacity(0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                  gradient: isLocked
-                      ? null
-                      : LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Colors.blue.shade400, Colors.blue.shade700],
-                        ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (isLocked)
-                      const Icon(Icons.lock, color: Colors.white38, size: 32)
-                    else ...[
-                      Text(
-                        '$level',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Image Layer
+                      if (!isHidden)
+                        Image.asset(imagePath, fit: BoxFit.cover)
+                      else
+                        ImageFiltered(
+                          imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                          child: Image.asset(imagePath, fit: BoxFit.cover),
+                        ),
+
+                      // Overlay for locking/dimming
+                      if (!isUnlocked)
+                        Container(color: Colors.black.withOpacity(0.5)),
+
+                      // Content Layer
+                      Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (isHidden)
+                              const Icon(
+                                Icons.lock,
+                                color: Colors.white54,
+                                size: 40,
+                              )
+                            else
+                              Text(
+                                '$level',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  shadows: [
+                                    Shadow(color: Colors.black, blurRadius: 10),
+                                  ],
+                                ),
+                              ),
+
+                            // Stars if unlocked
+                            if (isUnlocked && bestScore != null) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(5, (starIndex) {
+                                  return Icon(
+                                    starIndex < (bestScore['stars'] ?? 0)
+                                        ? Icons.star
+                                        : Icons.star_border,
+                                    color: Colors.amber,
+                                    size: 16,
+                                    shadows: const [
+                                      Shadow(
+                                        color: Colors.black54,
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  );
+                                }),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      if (bestScore != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(5, (starIndex) {
-                            return Icon(
-                              starIndex < (bestScore['stars'] ?? 0)
-                                  ? Icons.star
-                                  : Icons.star_border,
-                              color: Colors.amber,
-                              size: 12,
-                            );
-                          }),
-                        ),
-                        // Moves count removed to declutter and focus on stars as requested
-                        // If desired, can add back small text below
-                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             );

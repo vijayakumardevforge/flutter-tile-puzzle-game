@@ -3,6 +3,7 @@ import 'package:confetti/confetti.dart';
 import 'logic.dart';
 import 'audio_manager.dart';
 import 'storage.dart';
+import 'assets.dart';
 
 class PuzzleGame extends StatefulWidget {
   final int level;
@@ -14,6 +15,7 @@ class PuzzleGame extends StatefulWidget {
 
 class _PuzzleGameState extends State<PuzzleGame> {
   late PuzzleLogic logic;
+  bool _isLoading = false;
   int moves = 0;
   int makeEasyUses = 0;
   int maxMoves = 0;
@@ -26,6 +28,10 @@ class _PuzzleGameState extends State<PuzzleGame> {
   late ConfettiController _confettiController;
   int _targetMoves = 0; // For progress bar calculation
   bool isPremium = false;
+  int? _hintTileIndex;
+  bool _isGuideMode = false;
+  int _maxMakeEasyUses = 2; // Always 2 uses per level
+  int _hintsRemaining = 0; // Number of hints left to show sequentially
 
   @override
   void initState() {
@@ -45,58 +51,18 @@ class _PuzzleGameState extends State<PuzzleGame> {
   void _initLevel() {
     int shuffleMoves = -1;
 
-    final List<String> easyImages = [
-      'assets/images/baby_panda.png',
-      'assets/images/baby_tiger.png',
-      'assets/images/baby_elephant.png',
-      'assets/images/ai_bunny.png',
-      'assets/images/ai_fish.png',
-      'assets/images/ai_bird.png',
-      'assets/images/ai_flower.png',
-      'assets/images/ai_baby_robot.png',
-      'assets/images/ai_pet.png',
-      'assets/images/bears.png',
-    ];
-
-    final List<String> mediumImages = [
-      'assets/images/ai_butterfly.png',
-      'assets/images/ai_tree.png',
-      'assets/images/ai_fox.png',
-      'assets/images/ai_robot.png',
-      'assets/images/ai_city.png',
-      'assets/images/ai_drone.png',
-      'assets/images/ai_cat.png',
-      'assets/images/ai_space.png',
-      'assets/images/ai_plant.png',
-      'assets/images/ai_chip.png',
-    ];
-
-    final List<String> hardImages = [
-      'assets/images/ai_cloud.png',
-      'assets/images/ai_rocket.png',
-      'assets/images/dolls.jpg',
-      'assets/images/pattern.jpg',
-      'assets/images/pink_face.png',
-      'assets/images/red_panda.jpg',
-      'assets/images/cat.jpg',
-      'assets/images/cats_group.jpg',
-      'assets/images/dino.jpg',
-      'assets/images/user_upload_1.png',
-    ];
-
     if (widget.level <= 10) {
       gridSize = 2;
       shuffleMoves = 10;
-      imagePath = easyImages[(widget.level - 1) % easyImages.length];
     } else if (widget.level <= 20) {
       gridSize = 3;
       shuffleMoves = 30;
-      imagePath = mediumImages[(widget.level - 11) % mediumImages.length];
     } else {
       gridSize = 4;
       shuffleMoves = 60;
-      imagePath = hardImages[(widget.level - 21) % hardImages.length];
     }
+
+    imagePath = PuzzleAssets.getImageForLevel(widget.level);
 
     _targetMoves = shuffleMoves == -1 ? gridSize * gridSize * 3 : shuffleMoves;
     if (_targetMoves < 10) _targetMoves = 10; // Minimum target
@@ -114,6 +80,11 @@ class _PuzzleGameState extends State<PuzzleGame> {
 
     moves = 0;
     makeEasyUses = 0;
+    _maxMakeEasyUses = 2; // Fixed limit of 2 uses
+    _isGuideMode = false;
+    _hintTileIndex = null;
+    _hintsRemaining = 0;
+
     maxMoves = _calculateMaxMoves(_targetMoves, gridSize);
   }
 
@@ -135,8 +106,24 @@ class _PuzzleGameState extends State<PuzzleGame> {
       _audioManager.playClick(); // Play click sound
       setState(() {
         moves++;
+
+        if (_isGuideMode) {
+          _hintTileIndex = logic.getHint();
+        } else if (_hintsRemaining > 0) {
+          // Decrement hints remaining
+          _hintsRemaining--;
+          if (_hintsRemaining >= 0) {
+            _hintTileIndex = logic.getHint();
+          } else {
+            _hintTileIndex = null; // Done with sequence
+          }
+        } else {
+          _hintTileIndex = null; // Clear manual single hint if any
+        }
       });
       if (logic.isSolved) {
+        _isGuideMode = false;
+        _hintsRemaining = 0;
         _showWinDialog();
       }
     }
@@ -167,10 +154,41 @@ class _PuzzleGameState extends State<PuzzleGame> {
     }
   }
 
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: Card(
+          color: Colors.black87,
+          child: Padding(
+            padding: EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: Colors.purpleAccent),
+                SizedBox(height: 16),
+                Text(
+                  'Analyzing Puzzle...',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _hideLoadingDialog() {
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss loading dialog
+  }
+
   void _showOptionsDialog() {
     showDialog(
       context: context,
       barrierDismissible: true,
+      // ...
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
@@ -226,10 +244,10 @@ class _PuzzleGameState extends State<PuzzleGame> {
               const SizedBox(height: 16),
               _buildOptionOptionRow(
                 icon: Icons.auto_fix_high,
-                label: 'Make Easy (${2 - makeEasyUses} left)',
+                label: 'Make Easy (${_maxMakeEasyUses - makeEasyUses} left)',
                 color: Colors.purpleAccent,
                 onTap: () {
-                  if (makeEasyUses >= 2) {
+                  if (makeEasyUses >= _maxMakeEasyUses) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
@@ -240,40 +258,64 @@ class _PuzzleGameState extends State<PuzzleGame> {
                     return;
                   }
 
-                  if (isPremium) {
+                  // Calculate hints to give
+                  int hintsToGive = 2;
+                  if (widget.level <= 10)
+                    hintsToGive = 2; // Keep at 2 for Lv 1-10
+                  else if (widget.level <= 20)
+                    hintsToGive = 10;
+                  else
+                    hintsToGive = 15;
+
+                  hintsToGive = 15;
+
+                  VoidCallback onUse = () async {
+                    _showLoadingDialog();
+                    int? hint = await logic.getHintAsync();
+                    _hideLoadingDialog();
+
                     setState(() {
-                      logic.makeEasy();
-                      moves += 5;
-                      makeEasyUses++;
-                    });
-                    Navigator.pop(context);
-                  } else {
-                    // Show Ad Prompt
-                    Navigator.pop(context);
-                    _showAdPrompt('Watch Ad to Make Easy?', () {
-                      setState(() {
-                        logic.makeEasy();
-                        moves += 5;
+                      if (hint != null) {
+                        _hintTileIndex = hint;
+                        _hintsRemaining = hintsToGive - 1;
                         makeEasyUses++;
-                      });
+                      }
                     });
+                  };
+
+                  if (isPremium) {
+                    Navigator.pop(context); // Pop options first
+                    onUse();
+                  } else {
+                    Navigator.pop(context);
+                    _showAdPrompt('Watch Ad for $hintsToGive Hints?', onUse);
                   }
                 },
               ),
 
               const SizedBox(height: 16),
               _buildOptionOptionRow(
-                icon: Icons.skip_next,
-                label: 'Skip Level',
+                icon: Icons.auto_awesome, // Changed icon
+                label: 'Skip Level (Guide)',
                 color: Colors.orangeAccent,
                 onTap: () {
-                  Navigator.pop(context);
-                  if (isPremium) {
-                    _nextLevel();
-                  } else {
-                    _showAdPrompt('Watch Ad to Skip Level?', () {
-                      _nextLevel();
+                  Navigator.pop(context); // Pop options
+
+                  VoidCallback onActivate = () async {
+                    _showLoadingDialog();
+                    int? hint = await logic.getHintAsync();
+                    _hideLoadingDialog();
+
+                    setState(() {
+                      _isGuideMode = true;
+                      _hintTileIndex = hint;
                     });
+                  };
+
+                  if (isPremium) {
+                    onActivate();
+                  } else {
+                    _showPremiumDialog();
                   }
                 },
               ),
@@ -990,6 +1032,45 @@ class _PuzzleGameState extends State<PuzzleGame> {
                     ),
                   ),
                 ),
+              ),
+            if (_hintTileIndex == index)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  int empty = logic.emptyTileIndex;
+                  IconData icon = Icons.help_outline;
+                  // Determine direction
+                  if (empty == index - 1)
+                    icon = Icons.arrow_back_rounded;
+                  else if (empty == index + 1)
+                    icon = Icons.arrow_forward_rounded;
+                  else if (empty == index - gridSize)
+                    icon = Icons.arrow_upward_rounded;
+                  else if (empty == index + gridSize)
+                    icon = Icons.arrow_downward_rounded;
+
+                  return Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                        border: Border.all(color: Colors.purple, width: 2),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: Colors.purple,
+                        size: tileSize * 0.4,
+                      ),
+                    ),
+                  );
+                },
               ),
           ],
         );

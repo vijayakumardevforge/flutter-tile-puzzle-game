@@ -1,4 +1,7 @@
 import 'dart:math';
+import 'dart:math';
+import 'package:flutter/foundation.dart'; // For compute
+import 'solver.dart';
 
 class PuzzleLogic {
   final int size;
@@ -215,6 +218,28 @@ class PuzzleLogic {
         tiles[i2] = temp;
       }
     }
+  }
+
+  // Returns the index of the tile that should be moved
+  int? getHint() {
+    final solver = PuzzleSolver(tiles, size);
+    final solution = solver.solve();
+    if (solution != null && solution.isNotEmpty) {
+      return solution.first;
+    }
+    return null;
+  }
+
+  // Async version using compute
+  Future<int?> getHintAsync() async {
+    final solution = await compute(solvePuzzleInBackground, {
+      'startState': tiles,
+      'size': size,
+    });
+    if (solution != null && solution.isNotEmpty) {
+      return solution.first;
+    }
+    return null;
   }
 
   bool get isSolved {
