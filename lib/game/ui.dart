@@ -314,8 +314,6 @@ class _PuzzleGameState extends State<PuzzleGame> {
                   else
                     hintsToGive = 15;
 
-                  hintsToGive = 15;
-
                   VoidCallback onUse = () async {
                     _showLoadingDialog();
                     int? hint = await logic.getHintAsync();
