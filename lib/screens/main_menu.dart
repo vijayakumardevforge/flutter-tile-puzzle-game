@@ -4,6 +4,7 @@ import '../game/instructions.dart';
 import '../game/audio_manager.dart';
 import '../game/ui.dart'; // Added
 import '../game/storage.dart'; // Added
+import '../widgets/premium_dialog.dart';
 
 import 'settings.dart';
 import 'level_selection.dart';
@@ -39,104 +40,153 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           ),
         ),
         child: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Title with glow effect
-                Text(
-                  'Tile',
-                  style: TextStyle(
-                    fontSize: 72,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 20.0,
-                        color: Colors.purple.shade300,
-                        offset: const Offset(0, 0),
+          child: Stack(
+            children: [
+              // Premium Button (Top Left)
+              Positioned(
+                top: 16,
+                left: 16,
+                child: GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => PremiumSubscriptionDialog(
+                        onSubscribe: () async {
+                          await GameStorage().savePremiumStatus(true);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Premium Activated!'),
+                                backgroundColor: Colors.amber,
+                              ),
+                            );
+                          }
+                        },
                       ),
-                    ],
-                  ),
-                ),
-                Text(
-                  'Vision',
-                  style: TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w300,
-                    color: Colors.white70,
-                    letterSpacing: 4,
-                  ),
-                ),
-                const SizedBox(height: 60),
-
-                // Play Button
-                _buildMenuButton(
-                  context,
-                  icon: Icons.play_arrow,
-                  label: 'PLAY',
-                  onTap: () async {
-                    // Initialize storage to be sure
-                    await GameStorage().initialize();
-                    // Get highest unlocked level
-                    final level = GameStorage().getMaxLevel();
-
-                    if (context.mounted) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => PuzzleGame(level: level),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.amber, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.amber.withOpacity(0.5),
+                          blurRadius: 10,
+                          spreadRadius: 2,
                         ),
-                      );
-                    }
-                  },
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.workspace_premium, // Crown-like icon
+                      color: Colors.amber,
+                      size: 32,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 20),
-
-                // Levels Button
-                _buildMenuButton(
-                  context,
-                  icon: Icons.grid_view,
-                  label: 'LEVELS',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const LevelSelectionScreen(),
+              ),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Title with glow effect
+                    Text(
+                      'Tile',
+                      style: TextStyle(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 20.0,
+                            color: Colors.purple.shade300,
+                            offset: const Offset(0, 0),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // How to Play Button
-                _buildMenuButton(
-                  context,
-                  icon: Icons.help_outline,
-                  label: 'HOW TO PLAY',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const InstructionScreen(),
+                    ),
+                    Text(
+                      'Vision',
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w300,
+                        color: Colors.white70,
+                        letterSpacing: 4,
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
+                    ),
+                    const SizedBox(height: 60),
 
-                // Settings Button
-                _buildMenuButton(
-                  context,
-                  icon: Icons.settings,
-                  label: 'SETTINGS',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const SettingsScreen(),
-                      ),
-                    );
-                  },
+                    // Play Button
+                    _buildMenuButton(
+                      context,
+                      icon: Icons.play_arrow,
+                      label: 'PLAY',
+                      onTap: () async {
+                        // Initialize storage to be sure
+                        await GameStorage().initialize();
+                        // Get highest unlocked level
+                        final level = GameStorage().getMaxLevel();
+
+                        if (context.mounted) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => PuzzleGame(level: level),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Levels Button
+                    _buildMenuButton(
+                      context,
+                      icon: Icons.grid_view,
+                      label: 'LEVELS',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const LevelSelectionScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // How to Play Button
+                    _buildMenuButton(
+                      context,
+                      icon: Icons.help_outline,
+                      label: 'HOW TO PLAY',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const InstructionScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Settings Button
+                    _buildMenuButton(
+                      context,
+                      icon: Icons.settings,
+                      label: 'SETTINGS',
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const SettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

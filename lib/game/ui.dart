@@ -4,6 +4,7 @@ import 'logic.dart';
 import 'audio_manager.dart';
 import 'storage.dart';
 import 'assets.dart';
+import '../widgets/premium_dialog.dart';
 
 class PuzzleGame extends StatefulWidget {
   final int level;
@@ -39,6 +40,17 @@ class _PuzzleGameState extends State<PuzzleGame> {
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 3),
     );
+
+    // Initialize storage and check premium status
+    _storage.initialize().then((_) {
+      final premiumStatus = _storage.getPremiumStatus();
+      if (mounted) {
+        setState(() {
+          isPremium = premiumStatus;
+        });
+      }
+    });
+
     _initLevel();
   }
 
@@ -225,7 +237,34 @@ class _PuzzleGameState extends State<PuzzleGame> {
                 color: Colors.amber,
                 onTap: () {
                   Navigator.pop(context);
-                  _showPremiumDialog();
+                  if (isPremium) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('You are already a Premium member!'),
+                        backgroundColor: Colors.amber,
+                      ),
+                    );
+                  } else {
+                    showDialog(
+                      context: context,
+                      builder: (context) => PremiumSubscriptionDialog(
+                        onSubscribe: () async {
+                          await _storage.savePremiumStatus(true);
+                          setState(() {
+                            isPremium = true;
+                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Premium Activated!'),
+                                backgroundColor: Colors.amber,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  }
                 },
               ),
               const SizedBox(height: 16),
@@ -315,7 +354,25 @@ class _PuzzleGameState extends State<PuzzleGame> {
                   if (isPremium) {
                     onActivate();
                   } else {
-                    _showPremiumDialog();
+                    showDialog(
+                      context: context,
+                      builder: (context) => PremiumSubscriptionDialog(
+                        onSubscribe: () async {
+                          await _storage.savePremiumStatus(true);
+                          setState(() {
+                            isPremium = true;
+                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Premium Activated!'),
+                                backgroundColor: Colors.amber,
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    );
                   }
                 },
               ),
@@ -365,6 +422,7 @@ class _PuzzleGameState extends State<PuzzleGame> {
   void _showAdPrompt(String message, VoidCallback onWatch) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         child: Container(
@@ -373,177 +431,125 @@ class _PuzzleGameState extends State<PuzzleGame> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Colors.blue.shade900, Colors.purple.shade900],
+              colors: [Colors.purple.shade900, Colors.deepPurple.shade900],
             ),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.movie_creation_outlined,
-                color: Colors.white,
-                size: 48,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        // Simulate Ad
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Watching Ad... Reward Granted!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        onWatch();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                      ),
-                      child: const Text('Watch Ad'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showPremiumDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Colors.amber.shade800, Colors.orange.shade900],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white, width: 2),
+            border: Border.all(color: Colors.amber, width: 2),
             boxShadow: [
               BoxShadow(
                 color: Colors.amber.withOpacity(0.5),
                 blurRadius: 30,
-                spreadRadius: 5,
+                spreadRadius: 2,
               ),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.workspace_premium,
-                color: Colors.white,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'PREMIUM ACCESS',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
+              // Exciting Icon
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.card_giftcard,
+                    color: Colors.amber,
+                    size: 48,
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
-              _buildPremiumBenefit(Icons.check_circle, 'Unlimited Skips'),
-              const SizedBox(height: 12),
-              _buildPremiumBenefit(Icons.check_circle, 'No Ads'),
-              const SizedBox(height: 12),
-              _buildPremiumBenefit(Icons.check_circle, 'Support Development'),
-              const SizedBox(height: 32),
+
               const Text(
-                'Only ₹50 / Month',
+                "SPECIAL OFFER!",
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  color: Colors.amberAccent,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2.0,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
+
+              Text(
+                message, // e.g. "Watch Ad for 5 Hints?"
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Big CTA Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    setState(() {
-                      isPremium = true;
-                    });
                     Navigator.pop(context);
+                    // Simulate Ad
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Premium Activated! Thank you!'),
-                        backgroundColor: Colors.amber,
+                        content: Text('Watching Ad... Reward Granted!'),
+                        backgroundColor: Colors.green,
                       ),
                     );
+                    onWatch();
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.orange.shade900,
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    elevation: 10,
+                    shadowColor: Colors.greenAccent,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: const Text(
-                    'SUBSCRIBE NOW',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.play_circle_fill, size: 28),
+                      SizedBox(width: 12),
+                      Text(
+                        'WATCH & GET FREE!',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
+
+              // Subtle Cancel
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text(
-                  'Maybe Later',
-                  style: TextStyle(color: Colors.white70),
+                  'No thanks, I can solve this',
+                  style: TextStyle(
+                    color: Colors.white38,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildPremiumBenefit(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white, size: 20),
-        const SizedBox(width: 12),
-        Text(text, style: const TextStyle(color: Colors.white, fontSize: 16)),
-      ],
     );
   }
 

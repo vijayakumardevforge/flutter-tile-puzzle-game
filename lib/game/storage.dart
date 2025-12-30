@@ -61,6 +61,16 @@ class GameStorage {
     return _prefs!.getInt('max_level') ?? 1;
   }
 
+  bool getPremiumStatus() {
+    if (_prefs == null) return false;
+    return _prefs!.getBool('is_premium') ?? false;
+  }
+
+  Future<void> savePremiumStatus(bool isPremium) async {
+    await initialize();
+    await _prefs!.setBool('is_premium', isPremium);
+  }
+
   Future<void> resetAllProgress() async {
     await initialize();
     final keys = _prefs!.getKeys();
