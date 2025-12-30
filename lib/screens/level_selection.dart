@@ -123,21 +123,34 @@ class _LevelSelectionScreenState extends State<LevelSelectionScreen> {
                             // Stars if unlocked
                             if (isUnlocked && bestScore != null) ...[
                               const SizedBox(height: 4),
+                              /* Fixed: using spread operator properly for list of widgets */
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: List.generate(5, (starIndex) {
+                                  final bool isEarned =
+                                      starIndex < (bestScore['stars'] ?? 0);
                                   return Icon(
-                                    starIndex < (bestScore['stars'] ?? 0)
-                                        ? Icons.star
-                                        : Icons.star_border,
-                                    color: Colors.amber,
-                                    size: 16,
-                                    shadows: const [
-                                      Shadow(
-                                        color: Colors.black54,
-                                        blurRadius: 4,
-                                      ),
-                                    ],
+                                    isEarned
+                                        ? Icons.star_rounded
+                                        : Icons.star_outline_rounded,
+                                    color: isEarned
+                                        ? Colors.amberAccent
+                                        : Colors.white24,
+                                    size: 18,
+                                    shadows: isEarned
+                                        ? [
+                                            const Shadow(
+                                              color: Colors.orange,
+                                              blurRadius: 2,
+                                            ),
+                                            Shadow(
+                                              color: Colors.amber.withOpacity(
+                                                0.8,
+                                              ),
+                                              blurRadius: 8,
+                                            ),
+                                          ]
+                                        : [],
                                   );
                                 }),
                               ),
