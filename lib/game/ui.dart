@@ -240,8 +240,12 @@ class _PuzzleGameState extends State<PuzzleGame> {
                   if (isPremium) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('You are already a Premium member!'),
+                        content: Text(
+                          '🌟 You are already a Premium VIP! Thank you for your support! 🌟',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                         backgroundColor: Colors.amber,
+                        behavior: SnackBarBehavior.floating,
                       ),
                     );
                   } else {
@@ -256,8 +260,12 @@ class _PuzzleGameState extends State<PuzzleGame> {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Premium Activated!'),
+                                content: Text(
+                                  '🌟 Premium Activated! Welcome to the VIP Club! 🌟',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 backgroundColor: Colors.amber,
+                                behavior: SnackBarBehavior.floating,
                               ),
                             );
                           }
@@ -365,8 +373,12 @@ class _PuzzleGameState extends State<PuzzleGame> {
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Premium Activated!'),
+                                content: Text(
+                                  '🌟 Premium Activated! Welcome to the VIP Club! 🌟',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 backgroundColor: Colors.amber,
+                                behavior: SnackBarBehavior.floating,
                               ),
                             );
                           }

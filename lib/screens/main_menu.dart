@@ -47,7 +47,24 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                 top: 16,
                 left: 16,
                 child: GestureDetector(
-                  onTap: () {
+                  onTap: () async {
+                    await GameStorage().initialize();
+                    if (GameStorage().getPremiumStatus()) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              '🌟 You are already a Premium VIP! Thank you for your support! 🌟',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            backgroundColor: Colors.amber,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                      return;
+                    }
+                    if (!context.mounted) return;
                     showDialog(
                       context: context,
                       builder: (context) => PremiumSubscriptionDialog(
@@ -56,8 +73,12 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Premium Activated!'),
+                                content: Text(
+                                  '🌟 Premium Activated! Welcome to the VIP Club! 🌟',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                                 backgroundColor: Colors.amber,
+                                behavior: SnackBarBehavior.floating,
                               ),
                             );
                           }
